@@ -82,11 +82,15 @@ class Room {
         return true;
     }
 
+    get masterClient() {
+        return this.clients[0];
+    }
+
     /**
      * @param {Client} client 
      */
     isMaster(client) {
-        return client === this.clients[0];
+        return client === this.masterClient;
     }
 }
 
@@ -204,6 +208,18 @@ function processPacket(client, packet) {
                         client.sendPing();
                     }
                     break;
+                case 'get-room-list': {
+                    client.sendPacket('server', 'room-list', JSON.stringify(Object.keys(Room.rooms).map(roomKey => {
+                        let room = Room.rooms[roomKey];
+                        return ({
+                            'uid': room.uid,
+                            'client_count': room.clients.length,
+                            'max_client_count': room.maxClientCount,
+                            'master_client_nickname': room.masterClient.nickname
+                        });
+                    })));
+                    break;
+                }
                 case 'join-room': {
                     let targetRoom = Room.rooms[message];
                     if(!targetRoom) client.sendPacket('server', 'join-room-failed', 'invalid-room-id');
